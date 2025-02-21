@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exercício do Alien</title>
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.min.js"></script>
+    <style> body { display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; } </style>
+</head>
+<body>
+    <script>
+        const larguraJogo = 700;
+const alturaJogo = 850;
+
+const config = {
+    type: Phaser.AUTO,
+    width: larguraJogo,
+    height: alturaJogo,
+    physics: {
+        default: 'arcade',
+        arcade: {
+            gravity: { y: 300 },
+            debug: false
+        },
+    },
+    scene: { preload, create, update }
+};
+
+const game = new Phaser.Game(config);
+
+let alien, teclado, fogo, plataformas, coins, placar, asteroide, pontuacao;
+
+function preload() {
+    this.load.image('background', 'assets/estrelaDaMorte.png');
+    this.load.image('player', 'assets/alienigena.png');
+    this.load.image('turbo_nave', 'assets/turbo.png');
+    this.load.image('plataforma_tijolo', 'assets/tijolos.png');
+    this.load.image('coin', 'assets/moeda.png');
+    this.load.image('asteroide', 'assets/asteroide.png');
+}
+
+function create() {
+    this.add.image(larguraJogo / 2, alturaJogo / 2, 'background');
+
+    fogo = this.add.sprite(0, 0, 'turbo_nave').setVisible(false);
+
+    alien = this.physics.add.sprite(larguraJogo / 2, 0, 'player').setCollideWorldBounds(true);
+    alien.body.setSize(alien.width * 0.6, alien.height * 0.8, true);
+    teclado = this.input.keyboard.createCursorKeys();
+
+    plataformas = this.physics.add.staticGroup();
+    plataformas.create(larguraJogo / 2, alturaJogo / 2 + 150, 'plataforma_tijolo');
+    plataformas.create(100, 700, 'plataforma_tijolo');
+    plataformas.create(600, 400, 'plataforma_tijolo');
+    this.physics.add.collider(alien, plataformas);
+
+    coins = this.physics.add.group();
+    spawnCoin.call(this);
+    this.time.addEvent({ delay: 2000, callback: spawnCoin, callbackScope: this, loop: true });
+    
+    this.physics.add.collider(coins, plataformas);
+    this.physics.add.overlap(alien, coins, coletarCoin, null, this);
+
+    asteroide = this.physics.add.sprite(
+        Phaser.Math.Between(50, larguraJogo - 50),
+        Phaser.Math.Between(300, alturaJogo - 300),
+        'asteroide'
+    ).setScale(0.3).setCollideWorldBounds(true).setBounce(1);
+    asteroide.setVelocity(Phaser.Math.Between(-200, 200), Phaser.Math.Between(-200, 200));
+
+    this.physics.add.collider(asteroide, plataformas);
+    this.physics.add.collider(asteroide, alien, resetarPosicaoAlien, null, this);
+
+    pontuacao = 0;
+    placar = this.add.text(50, 50, 'Coins: ' + pontuacao, { fontSize: '45px', fill: '#495613' });
+}
+
+function coletarCoin(alien, coin) {
+    coin.disableBody(true, true);
+    pontuacao++;
+    placar.setText('Coins: ' + pontuacao);
+}
+
+function spawnCoin() {
+    let newCoin = coins.create(
+        Phaser.Math.Between(50, larguraJogo - 50),
+        Phaser.Math.Between(50, alturaJogo - 200),
+        'coin'
+    );
+    newCoin.setBounce(0.7);
+    newCoin.setCollideWorldBounds(true);
+}
+
+function update() {
+    alien.setVelocityX(teclado.left.isDown ? -150 : teclado.right.isDown ? 150 : 0);
+    
+    if (teclado.up.isDown) {
+        alien.setVelocityY(-150);
+        fogo.setVisible(true);
+    } else {
+        fogo.setVisible(false);
+    }
+    
+    fogo.setPosition(alien.x, alien.y + alien.height / 2);
+}
+
+function resetarPosicaoAlien() {
+    alien.setPosition(larguraJogo / 2, 0);
+}
+
+    </script>
+</body>
+</html>
